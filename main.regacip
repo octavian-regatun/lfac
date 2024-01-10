@@ -1,5 +1,64 @@
-intreg n;
+n: intreg;
+n: intreg=5;
+v: intreg[100];
+constanta v:intreg = 54;
+
+functie sum(x: intreg, y: intreg) -> intreg {
+    n: intreg;
+    n=5;
+    n=5;
+};
+
+clasa Nume {
+    public x: intreg;
+    public x: intreg;
+    public x: intreg;
+    public x: intreg;
+	privat y: intreg[100];
+	
+    public hello(x: intreg) -> decimal {
+        n: intreg;
+        n=5;    
+    };
+
+$$ sunt prea boss
+$$am valoarea lui daniel
+
+    privat world(x: intreg) -> decimal {
+        n: intreg;
+        n=5;    
+    };
+};
+
 
 inceput
+    v[5]=4;
     n=5;
+
+    daca (x==5) {
+        n=5;
+    }
+    altfel daca(x==10) {
+        n=5;
+    }
+    altfel{
+        n=5;
+    }
+
+pentru element din vector {
+    x=5;
+}
+
+cat_timp (x==5) {
+    x=5;
+    x=5;
+    sparge;
+}
+
+hello(5);
+
+hello(5+5);
+
+hello(x);
+
 sfarsit

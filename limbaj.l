@@ -27,17 +27,26 @@
 "]"         return RIGHT_SQUARE;
 "("         return LEFT_PAREN;
 ")"         return RIGHT_PAREN;
+"{"         return LEFT_CURLY;
+"}"         return RIGHT_CURLY;
 "pentru"    return FOR;
+"cat_timp"  return WHILE;
 "daca"      return IF;
 "altfel"    return ELSE;
 "din"       return OF;
 "clasa"     return CLASS;
 "functie"   return FUNCTION;
+":"         return COLON;
+"->"        return ARROW;
+"public"    return PUBLIC;
+"privat"    return PRIVATE;
+"constanta" return CONST;
+"sparge"    return BREAK;
 [a-zA-Z][a-zA-Z0-9]* {yylval.string = strdup(yytext); return ID;}
 "=" {return ASSIGN;}
 [0-9]+ {return NR;}
 [ \t] ;
 \n {yylineno++;}
-. {printf("Lexical error at line %d: unexpected character '%s'\n", yylineno, yytext); return yytext[0];}
-
+"$$".*
+. {return yytext[0];}
  
