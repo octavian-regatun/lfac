@@ -58,8 +58,34 @@ extern int yydebug;
     END = 259,                     /* END  */
     ASSIGN = 260,                  /* ASSIGN  */
     NR = 261,                      /* NR  */
-    ID = 262,                      /* ID  */
-    TYPE = 263                     /* TYPE  */
+    MULTIPLY = 262,                /* MULTIPLY  */
+    MINUS = 263,                   /* MINUS  */
+    DIVIDE = 264,                  /* DIVIDE  */
+    MODULO = 265,                  /* MODULO  */
+    AND = 266,                     /* AND  */
+    OR = 267,                      /* OR  */
+    EQUAL = 268,                   /* EQUAL  */
+    NOT_EQUAL = 269,               /* NOT_EQUAL  */
+    GREATER = 270,                 /* GREATER  */
+    LESS = 271,                    /* LESS  */
+    GREATER_EQUAL = 272,           /* GREATER_EQUAL  */
+    LESS_EQUAL = 273,              /* LESS_EQUAL  */
+    POINT = 274,                   /* POINT  */
+    QUOTE_MARK = 275,              /* QUOTE_MARK  */
+    PLUS = 276,                    /* PLUS  */
+    LEFT_SQUARE = 277,             /* LEFT_SQUARE  */
+    RIGHT_SQUARE = 278,            /* RIGHT_SQUARE  */
+    LEFT_PAREN = 279,              /* LEFT_PAREN  */
+    RIGHT_PAREN = 280,             /* RIGHT_PAREN  */
+    FOR = 281,                     /* FOR  */
+    IF = 282,                      /* IF  */
+    ELSE = 283,                    /* ELSE  */
+    OF = 284,                      /* OF  */
+    CLASS = 285,                   /* CLASS  */
+    FUNCTION = 286,                /* FUNCTION  */
+    ID = 287,                      /* ID  */
+    TYPE = 288,                    /* TYPE  */
+    BOOL_VALUE = 289               /* BOOL_VALUE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -72,7 +98,7 @@ union YYSTYPE
 
      char* string;
 
-#line 76 "limbaj.tab.h"
+#line 102 "limbaj.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

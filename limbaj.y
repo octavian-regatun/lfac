@@ -12,8 +12,8 @@ class IdList ids;
 %union {
      char* string;
 }
-%token  BGIN END ASSIGN NR 
-%token<string> ID TYPE
+%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION
+%token<string> ID TYPE BOOL_VALUE
 %start progr
 %%
 progr: declarations block {printf("The programme is correct!\n\n");}
