@@ -21,14 +21,22 @@ clasa Nume {
         n=5;    
     };
 
-$$ sunt prea boss
-$$am valoarea lui daniel
+    Nume() {
+        test = x;
+    };
+
+    ~Nume() {
+        test = 0;
+    };
 
     privat world(x: intreg) -> decimal {
         n: intreg;
         n=5;    
     };
 };
+
+$$ comentariuuu
+$$alt comm
 
 
 inceput
@@ -60,5 +68,6 @@ hello(5);
 hello(5+5);
 
 hello(x);
+x=x+5+(f(x*6)-v[5]);
 
 sfarsit

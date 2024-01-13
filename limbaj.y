@@ -12,8 +12,17 @@ class IdList ids;
 %union {
      char* string;
 }
-%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW PUBLIC PRIVATE CONST WHILE BREAK
+%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK
 %token<string> ID TYPE BOOL_VALUE
+
+%left PLUS MINUS
+%left MULTIPLY DIVIDE
+%left UNARY_MINUS
+%left AND OR
+%left EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL
+%left LEFT_SQUARE RIGHT_SQUARE
+%left LEFT_PAREN RIGHT_PAREN
+
 %start progr
 %%
 progr: declarations main {printf("The programme is correct!\n\n");}
@@ -27,61 +36,71 @@ declaration  :  ID COLON TYPE { if(!ids.existsVar($3)) {
                           ids.addVar($3,$1);
                      }
                     }
-               | ID COLON TYPE ASSIGN expression
+               | ID COLON TYPE ASSIGN expression_or_boolean
                | ID COLON TYPE LEFT_SQUARE NR RIGHT_SQUARE
-               | CONST ID COLON TYPE ASSIGN expression
+               | CONST ID COLON TYPE ASSIGN expression_or_boolean
                | function 
                | class_definition  
                ;
 
-expression :
-    NR
-  | ID
-  | BOOL_VALUE
-  | function_call
-  | expression PLUS expression
-  | expression MINUS expression
-  | expression MULTIPLY expression
-  | expression DIVIDE expression
-  | expression EQUAL expression
-  | expression NOT_EQUAL expression
-  | expression GREATER expression
-  | expression LESS expression
-  | expression GREATER_EQUAL expression
-  | expression LESS_EQUAL expression
-  | expression AND expression
-  | expression OR expression
-  | LEFT_PAREN expression RIGHT_PAREN
-  ;
+expression_or_boolean : expression
+                     | boolean_expression
+                     ;
+
+expression : NR
+           | ID
+           | function_call
+           | expression PLUS expression
+           | expression MINUS expression
+           | expression MULTIPLY expression
+           | expression DIVIDE expression
+           | LEFT_PAREN expression RIGHT_PAREN
+           | ID LEFT_SQUARE NR RIGHT_SQUARE
+           ;
+
+boolean_expression : BOOL_VALUE
+                 | expression EQUAL expression
+                 | expression NOT_EQUAL expression
+                 | expression GREATER expression
+                 | expression LESS expression
+                 | expression GREATER_EQUAL expression
+                 | expression LESS_EQUAL expression
+                 | expression AND expression
+                 | expression OR expression
+                 ;
+
 
 /* instructions */
 if:
-    IF LEFT_PAREN expression RIGHT_PAREN LEFT_CURLY statements RIGHT_CURLY
-    | IF LEFT_PAREN expression RIGHT_PAREN LEFT_CURLY statements RIGHT_CURLY else
+    IF LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
+    | IF LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY else
     ;
 
 else: 
-      ELSE LEFT_CURLY statements RIGHT_CURLY
+      ELSE LEFT_CURLY function_body RIGHT_CURLY
     | ELSE if
     ;
 
 for : FOR ID OF ID LEFT_CURLY function_body RIGHT_CURLY
     ;
 
-while : WHILE LEFT_PAREN expression RIGHT_PAREN LEFT_CURLY while_body RIGHT_CURLY
+while : WHILE LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
     ;
 
+/* Isn't it wrong to have the break inside the while loop? Shouldn't it be in any function?
 while_body : function_body
-               | BREAK ';'
-               | while_body BREAK ';'
+           | BREAK ';'
+           | while_body BREAK ';'
+           ;
+*/
     
 function_call :
     ID LEFT_PAREN argument_list RIGHT_PAREN
     ;
 
 argument_list :
-    | expression
-    | argument_list ',' expression
+    | expression_or_boolean
+    | argument_list ',' expression_or_boolean
     ;
 
 class_definition :
@@ -94,6 +113,8 @@ class_body :
 
 class_member:   property
               | method
+              | constructor
+              | destructor
               ;
 
 property: PUBLIC declaration
@@ -104,54 +125,57 @@ method: PUBLIC ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY functi
      | PRIVATE ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY function_body RIGHT_CURLY
           ;
 
+constructor: ID LEFT_PAREN RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
+          ;
+
+destructor: TILDA ID LEFT_PAREN RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
+          ;
+
 function : FUNCTION ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY function_body RIGHT_CURLY
          ; 
-
-function_body : 
-    | function_body declaration ';'
-    | function_body statement ';'
-    ;
 
 parameters: ID COLON TYPE
           | parameters ',' ID COLON TYPE
           ;
 
+/* // Seems useless for our program
 list_param : param
             | list_param ','  param 
             ;
             
 param : TYPE ID 
       ; 
+*/
       
 
-main : BGIN main_body END  
+main : BGIN function_body END  
      ;
      
-
-main_body : 
-    | main_body declaration ';'
-    | main_body statement ';'
-    | main_body if
-    | main_body for
-    | main_body while
-    | main_body function_call ';'
+function_body : 
+    | function_body declaration ';'
+    | function_body statement ';'
+    | function_body if
+    | function_body for
+    | function_body while
+    | function_body function_call ';'
+    | function_body BREAK ';' // How will the break determine what to "sparge" tho?
     ;
 
+/* // When is this used? The statements are already recursive from function_body
 statements :  statement ';' 
      | statements statement ';'
      ;
+*/
 
-statement: ID ASSIGN ID
-         | ID ASSIGN NR
-         | ID ASSIGN BOOL_VALUE
-         | ID LEFT_SQUARE NR RIGHT_SQUARE ASSIGN ID
-         | ID LEFT_SQUARE NR RIGHT_SQUARE ASSIGN NR
-         | ID LEFT_SQUARE NR RIGHT_SQUARE ASSIGN BOOL_VALUE
+statement:
+         | ID ASSIGN expression_or_boolean
+         | ID LEFT_SQUARE expression_or_boolean RIGHT_SQUARE ASSIGN expression_or_boolean
          ;
-        
-call_list : NR
+/* // // Seems useless for our program      
+ all_list : NR
            | call_list ',' NR
            ;
+*/
 %%
 void yyerror(const char * s){
      printf("error: %s at line:%d\n",s,yylineno);

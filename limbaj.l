@@ -38,6 +38,7 @@
 "functie"   return FUNCTION;
 ":"         return COLON;
 "->"        return ARROW;
+"~"         return TILDA;
 "public"    return PUBLIC;
 "privat"    return PRIVATE;
 "constanta" return CONST;
