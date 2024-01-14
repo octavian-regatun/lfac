@@ -1,9 +1,15 @@
 n: intreg;
 n: intreg=5;
 v: intreg[100];
-constanta v:intreg = 54;
+constanta v: intreg = 54;
 
 functie sum(x: intreg, y: intreg) -> intreg {
+    n: intreg;
+    n=5;
+    n=5;
+};
+
+functie smth() -> vid {
     n: intreg;
     n=5;
     n=5;
@@ -17,11 +23,12 @@ clasa Nume {
 	privat y: intreg[100];
 	
     public hello(x: intreg) -> decimal {
+        acesta.x = 5;
         n: intreg;
         n=5;    
     };
 
-    Nume() {
+    Nume(n: decimal) {
         test = x;
     };
 

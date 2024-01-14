@@ -43,6 +43,7 @@
 "privat"    return PRIVATE;
 "constanta" return CONST;
 "sparge"    return BREAK;
+"acesta"    return THIS;
 [a-zA-Z][a-zA-Z0-9]* {yylval.string = strdup(yytext); return ID;}
 "=" {return ASSIGN;}
 [0-9]+ {return NR;}

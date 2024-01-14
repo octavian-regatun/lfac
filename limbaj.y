@@ -12,7 +12,7 @@ class IdList ids;
 %union {
      char* string;
 }
-%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK
+%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS
 %token<string> ID TYPE BOOL_VALUE
 
 %left PLUS MINUS
@@ -125,17 +125,18 @@ method: PUBLIC ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY functi
      | PRIVATE ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY function_body RIGHT_CURLY
           ;
 
-constructor: ID LEFT_PAREN RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
+constructor: ID LEFT_PAREN parameters RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
           ;
 
 destructor: TILDA ID LEFT_PAREN RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
           ;
 
-function : FUNCTION ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY function_body RIGHT_CURLY
+function: FUNCTION ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY function_body RIGHT_CURLY
          ; 
 
-parameters: ID COLON TYPE
-          | parameters ',' ID COLON TYPE
+parameters:
+          | ',' ID COLON TYPE parameters
+          | ID COLON TYPE parameters
           ;
 
 /* // Seems useless for our program
@@ -170,6 +171,7 @@ statements :  statement ';'
 statement:
          | ID ASSIGN expression_or_boolean
          | ID LEFT_SQUARE expression_or_boolean RIGHT_SQUARE ASSIGN expression_or_boolean
+         | THIS POINT ID ASSIGN expression_or_boolean
          ;
 /* // // Seems useless for our program      
  all_list : NR
