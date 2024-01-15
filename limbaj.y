@@ -1,17 +1,31 @@
 %{
 #include <iostream>
 #include <vector>
-#include "IdList.h"
+#include "main.cpp"
 extern FILE* yyin;
 extern char* yytext;
 extern int yylineno;
 extern int yylex();
 void yyerror(const char * s);
-class IdList ids;
+class VariableUtility ids;
+
+ScopeNode *globalScope = new ScopeNode("global");
+ScopeNode *currentScope = globalScope;
+
+ScopeNode *currentClassScope = NULL;
+ScopeNode *currentFunctionScope = NULL;
 %}
 %union {
      char* string;
+
+    struct {
+        char* type;
+        char* name;
+    } var_info;
 }
+
+%type <var_info> declaration
+
 %token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS
 %token<string> ID TYPE BOOL_VALUE
 
@@ -25,22 +39,43 @@ class IdList ids;
 
 %start progr
 %%
-progr: declarations main {printf("The programme is correct!\n\n");}
+
+/* class declarations */
+/* global vars */
+/* global functions */
+/* main */
+
+progr: class_definitions declarations functions main {printf("The programme is correct!\n\n");}
      ;
+
+
+
+/* progr: declarations main {printf("The programme is correct!\n\n");}
+     ; */
+
+
 
 declarations :  declaration ';'          
 	      |  declarations declaration ';'   
 	      ;
 
-declaration  :  ID COLON TYPE { if(!ids.existsVar($3)) {
-                          ids.addVar($3,$1);
-                     }
-                    }
-               | ID COLON TYPE ASSIGN expression_or_boolean
-               | ID COLON TYPE LEFT_SQUARE NR RIGHT_SQUARE
-               | CONST ID COLON TYPE ASSIGN expression_or_boolean
-               | function 
-               | class_definition  
+declaration  :  ID COLON TYPE {
+    $$ = {$3,$1};  
+    if(currentClassScope == NULL && currentFunctionScope== NULL){
+        currentScope->addVariable(Variable{string($3),string($1),0});
+    }
+    else if(currentFunctionScope != NULL){
+        currentFunctionScope->addVariable(Variable{string($3),string($1),0});
+    }
+    else if(currentClassScope != NULL){
+        currentClassScope->addVariable(Variable{string($3),string($1),0});
+    }
+}
+               | ID COLON TYPE ASSIGN expression_or_boolean {$$ = {NULL, NULL};}
+               | ID COLON TYPE LEFT_SQUARE NR RIGHT_SQUARE {$$ = {NULL, NULL};}
+               | CONST ID COLON TYPE ASSIGN expression_or_boolean {$$ = {NULL, NULL};}
+               /* | function 
+               | class_definition   */
                ;
 
 expression_or_boolean : expression
@@ -71,21 +106,45 @@ boolean_expression : BOOL_VALUE
 
 
 /* instructions */
-if:
-    IF LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
-    | IF LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY else
+if_statement :
+    IF LEFT_PAREN boolean_expression RIGHT_PAREN if_compound_statement
+    | IF LEFT_PAREN boolean_expression RIGHT_PAREN if_compound_statement else_statement
     ;
 
-else: 
-      ELSE LEFT_CURLY function_body RIGHT_CURLY
-    | ELSE if
+if_compound_statement :
+    LEFT_CURLY { ScopeNode::enterScope(string("if"), currentScope); }
+    function_body
+    RIGHT_CURLY { ScopeNode::exitScope(currentScope); }
     ;
 
-for : FOR ID OF ID LEFT_CURLY function_body RIGHT_CURLY
+else_compound_statement:
+    LEFT_CURLY { ScopeNode::enterScope(string("else"), currentScope); }
+    function_body
+    RIGHT_CURLY { ScopeNode::exitScope(currentScope); }
     ;
 
-while : WHILE LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
+else_statement: 
+      ELSE else_compound_statement
+    | ELSE if_statement
     ;
+
+for : FOR ID OF ID LEFT_CURLY {
+          ScopeNode::enterScope("for", currentScope);
+      }
+      function_body {
+          ScopeNode::exitScope(currentScope);
+      }
+      RIGHT_CURLY
+    ;
+
+while : WHILE LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY {
+            ScopeNode::enterScope(string("while"), currentScope);
+        }
+        function_body {
+            ScopeNode::exitScope(currentScope);
+        } RIGHT_CURLY
+;
+
 
 /* Isn't it wrong to have the break inside the while loop? Shouldn't it be in any function?
 while_body : function_body
@@ -104,7 +163,17 @@ argument_list :
     ;
 
 class_definition :
-    CLASS ID LEFT_CURLY class_body RIGHT_CURLY
+    CLASS ID LEFT_CURLY {
+        currentClassScope = new ScopeNode("clasa");
+    }
+     class_body{
+        currentClassScope = NULL;
+     }
+      RIGHT_CURLY
+    ;
+
+class_definitions: 
+    | class_definitions class_definition
     ;
 
 class_body :
@@ -121,8 +190,8 @@ property: PUBLIC declaration
         | PRIVATE declaration
         ;
 
-method: PUBLIC ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY function_body RIGHT_CURLY
-     | PRIVATE ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY function_body RIGHT_CURLY
+method: PUBLIC function
+     | PRIVATE function
           ;
 
 constructor: ID LEFT_PAREN parameters RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
@@ -131,8 +200,12 @@ constructor: ID LEFT_PAREN parameters RIGHT_PAREN LEFT_CURLY function_body RIGHT
 destructor: TILDA ID LEFT_PAREN RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
           ;
 
-function: FUNCTION ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY function_body RIGHT_CURLY
+function: FUNCTION ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY {currentFunctionScope=new ScopeNode("functie");} function_body {currentFunctionScope=NULL;} RIGHT_CURLY
          ; 
+
+functions: 
+    | functions function
+    ;
 
 parameters:
           | ',' ID COLON TYPE parameters
@@ -149,13 +222,18 @@ param : TYPE ID
 */
       
 
-main : BGIN function_body END  
-     ;
+main : BGIN {
+                ScopeNode::enterScope(string("main"), currentScope);
+            }
+      function_body END {
+                ScopeNode::exitScope(currentScope);
+             }
+      ;
      
 function_body : 
     | function_body declaration ';'
     | function_body statement ';'
-    | function_body if
+    | function_body if_statement
     | function_body for
     | function_body while
     | function_body function_call ';'
@@ -179,6 +257,7 @@ statement:
            ;
 */
 %%
+
 void yyerror(const char * s){
      printf("error: %s at line:%d\n",s,yylineno);
 }
@@ -186,6 +265,10 @@ void yyerror(const char * s){
 int main(int argc, char** argv){
      yyin=fopen(argv[1],"r");
      yyparse();
-     cout << "Variables:" <<endl;
-     ids.printVars();
+     /* cout << "Variables:" <<endl; */
+     /* ids.printVars(); */
+     
+    globalScope->printScope();
+    return 0;
+        
 } 
