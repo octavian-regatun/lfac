@@ -26,8 +26,9 @@ clasa Nume {
 
 n: intreg;
 n: intreg=5;
-v: intreg[100];
-constanta v: intreg = 54;
+v: decimal[100];
+constanta v1: intreg = 54;
+y: intreg;
 
 functie sum(x: intreg, y: intreg) -> intreg {
     n: intreg;
@@ -41,10 +42,13 @@ functie smth() -> vid {
     n=5;
 }
 
+functie world() -> vid {}
+
 inceput
     variabilaDinMain: intreg;
     v[5]=4;
     n=5;
+    v1=233;
 
     daca (x==5) {
         variabilaDinDaca: intreg;

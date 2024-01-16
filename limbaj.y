@@ -1,5 +1,6 @@
 %{
 #include <iostream>
+#include <cstring>
 #include <vector>
 #include "main.cpp"
 extern FILE* yyin;
@@ -7,13 +8,43 @@ extern char* yytext;
 extern int yylineno;
 extern int yylex();
 void yyerror(const char * s);
-class VariableUtility ids;
+//class VariableUtility ids;
 
 ScopeNode *globalScope = new ScopeNode("global");
 ScopeNode *currentScope = globalScope;
 
 ScopeNode *currentClassScope = NULL;
 ScopeNode *currentFunctionScope = NULL;
+
+FunctionUtility *functions = new FunctionUtility();
+ClassUtility *classes = new ClassUtility();
+
+void addVariableToScope(Variable var, ScopeNode *currentScope, ScopeNode *currentClassScope, ScopeNode *currentFunctionScope)
+{
+  if(currentClassScope == NULL && currentFunctionScope== NULL){
+        currentScope->addVariable(var);
+    }
+    else if(currentFunctionScope != NULL){
+        currentFunctionScope->addVariable(var);
+    }
+    else if(currentClassScope != NULL){
+        currentClassScope->addVariable(var);
+    }
+}
+
+void updateScopeVariable(const string& id, const string& index, const string& value, ScopeNode *currentScope, ScopeNode *currentClassScope, ScopeNode *currentFunctionScope)
+{
+    if(currentClassScope == NULL && currentFunctionScope== NULL){
+        currentScope->updateVariable(id, index, value);
+    }
+    else if(currentFunctionScope != NULL){
+        currentFunctionScope->updateVariable(id, index, value);
+    }
+    else if(currentClassScope != NULL){
+        currentClassScope->updateVariable(id, index, value);
+    }
+}
+
 %}
 %union {
      char* string;
@@ -21,10 +52,12 @@ ScopeNode *currentFunctionScope = NULL;
     struct {
         char* type;
         char* name;
+        char* value;
     } var_info;
 }
 
 %type <var_info> declaration
+%type <string> expression_or_boolean expression boolean_expression function_call NR LEFT_PAREN
 
 %token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS
 %token<string> ID TYPE BOOL_VALUE
@@ -45,37 +78,26 @@ ScopeNode *currentFunctionScope = NULL;
 /* global functions */
 /* main */
 
-progr: class_definitions declarations functions main {printf("The programme is correct!\n\n");}
+progr: class_definitions declarations functions main {printf("\n\nThe program is syntactically correct! Any logic errors, if present, can be found above.\n\n");}
      ;
-
-
-
-/* progr: declarations main {printf("The programme is correct!\n\n");}
-     ; */
-
 
 
 declarations :  declaration ';'          
 	      |  declarations declaration ';'   
 	      ;
 
-declaration  :  ID COLON TYPE {
-    $$ = {$3,$1};  
-    if(currentClassScope == NULL && currentFunctionScope== NULL){
-        currentScope->addVariable(Variable{string($3),string($1),0});
+declaration: ID COLON TYPE { $$ = {$3,$1,strdup("")};
+    addVariableToScope(Variable{string($3), string($1), 1, "0", 0}, currentScope, currentClassScope, currentFunctionScope);}
+    
+    | ID COLON TYPE ASSIGN expression_or_boolean {$$ = {$3,$1,$5};
+    addVariableToScope(Variable{string($3), string($1), 1, string($5), 0}, currentScope, currentClassScope, currentFunctionScope);}
+    
+    | ID COLON TYPE LEFT_SQUARE NR RIGHT_SQUARE {$$ = {$3,$1,$5};
+    addVariableToScope(Variable{string($3), string($1), stoi($5), "0", 0}, currentScope, currentClassScope, currentFunctionScope);
     }
-    else if(currentFunctionScope != NULL){
-        currentFunctionScope->addVariable(Variable{string($3),string($1),0});
-    }
-    else if(currentClassScope != NULL){
-        currentClassScope->addVariable(Variable{string($3),string($1),0});
-    }
-}
-               | ID COLON TYPE ASSIGN expression_or_boolean {$$ = {NULL, NULL};}
-               | ID COLON TYPE LEFT_SQUARE NR RIGHT_SQUARE {$$ = {NULL, NULL};}
-               | CONST ID COLON TYPE ASSIGN expression_or_boolean {$$ = {NULL, NULL};}
-               /* | function 
-               | class_definition   */
+    
+    | CONST ID COLON TYPE ASSIGN expression_or_boolean {$$ = {$4,$2,$6};
+    addVariableToScope(Variable{string($4), string($2), 1, string($6), 1}, currentScope, currentClassScope, currentFunctionScope);}
                ;
 
 expression_or_boolean : expression
@@ -90,7 +112,7 @@ expression : NR
            | expression MULTIPLY expression
            | expression DIVIDE expression
            | LEFT_PAREN expression RIGHT_PAREN
-           | ID LEFT_SQUARE NR RIGHT_SQUARE
+           | ID LEFT_SQUARE NR RIGHT_SQUARE {$$ = strdup(yytext);}
            ;
 
 boolean_expression : BOOL_VALUE
@@ -101,7 +123,7 @@ boolean_expression : BOOL_VALUE
                  | expression GREATER_EQUAL expression
                  | expression LESS_EQUAL expression
                  | expression AND expression
-                 | expression OR expression
+                 | expression OR expression {$$ = strdup(yytext);}
                  ;
 
 
@@ -144,17 +166,9 @@ while : WHILE LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY {
             ScopeNode::exitScope(currentScope);
         } RIGHT_CURLY
 ;
-
-
-/* Isn't it wrong to have the break inside the while loop? Shouldn't it be in any function?
-while_body : function_body
-           | BREAK ';'
-           | while_body BREAK ';'
-           ;
-*/
     
 function_call :
-    ID LEFT_PAREN argument_list RIGHT_PAREN
+    ID LEFT_PAREN argument_list RIGHT_PAREN {$$ = strdup(yytext);}
     ;
 
 argument_list :
@@ -165,9 +179,12 @@ argument_list :
 class_definition :
     CLASS ID LEFT_CURLY {
         currentClassScope = new ScopeNode("clasa");
+        globalScope->addScopeNode(currentClassScope); // append class node
+        classes->AddClass(string($2));
     }
      class_body{
         currentClassScope = NULL;
+        currentScope = globalScope; // go back to the root if necessary
      }
       RIGHT_CURLY
     ;
@@ -200,7 +217,13 @@ constructor: ID LEFT_PAREN parameters RIGHT_PAREN LEFT_CURLY function_body RIGHT
 destructor: TILDA ID LEFT_PAREN RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
           ;
 
-function: FUNCTION ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY {currentFunctionScope=new ScopeNode("functie");} function_body {currentFunctionScope=NULL;} RIGHT_CURLY
+function: FUNCTION ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY 
+        {currentFunctionScope=new ScopeNode("functie");
+        globalScope->addScopeNode(currentFunctionScope);
+        functions->AddFunction(Function{string($2), string($7)});
+        } function_body 
+        {currentFunctionScope=NULL;
+        currentScope = globalScope;} RIGHT_CURLY
          ; 
 
 functions: 
@@ -211,16 +234,6 @@ parameters:
           | ',' ID COLON TYPE parameters
           | ID COLON TYPE parameters
           ;
-
-/* // Seems useless for our program
-list_param : param
-            | list_param ','  param 
-            ;
-            
-param : TYPE ID 
-      ; 
-*/
-      
 
 main : BGIN {
                 ScopeNode::enterScope(string("main"), currentScope);
@@ -237,25 +250,23 @@ function_body :
     | function_body for
     | function_body while
     | function_body function_call ';'
-    | function_body BREAK ';' // How will the break determine what to "sparge" tho?
+    | function_body BREAK ';'
     ;
 
-/* // When is this used? The statements are already recursive from function_body
-statements :  statement ';' 
-     | statements statement ';'
-     ;
-*/
-
 statement:
-         | ID ASSIGN expression_or_boolean
-         | ID LEFT_SQUARE expression_or_boolean RIGHT_SQUARE ASSIGN expression_or_boolean
-         | THIS POINT ID ASSIGN expression_or_boolean
-         ;
-/* // // Seems useless for our program      
- all_list : NR
-           | call_list ',' NR
-           ;
-*/
+    | ID ASSIGN expression_or_boolean {
+        updateScopeVariable($1, "0", $3, currentScope, currentClassScope, currentFunctionScope);
+    }
+    | ID LEFT_SQUARE expression_or_boolean RIGHT_SQUARE ASSIGN expression_or_boolean {
+        updateScopeVariable($1, $3, $6, currentScope, currentClassScope, currentFunctionScope);
+    }
+    | THIS POINT ID ASSIGN expression_or_boolean {
+       // if (checkIfInClass()) 
+            updateScopeVariable($3, "0", $5, currentScope, currentClassScope, currentFunctionScope);
+    }
+    ;
+
+
 %%
 
 void yyerror(const char * s){
@@ -263,12 +274,13 @@ void yyerror(const char * s){
 }
 
 int main(int argc, char** argv){
-     yyin=fopen(argv[1],"r");
-     yyparse();
-     /* cout << "Variables:" <<endl; */
-     /* ids.printVars(); */
+    yyin=fopen(argv[1],"r");
+    yyparse();
      
-    globalScope->printScope();
+    // globalScope->printScope();
+    globalScope->printTree();
+    functions->PrintFunctions();
+    classes->PrintClasses();
     return 0;
         
 } 
