@@ -46,7 +46,7 @@
 "acesta"    return THIS;
 [a-zA-Z][a-zA-Z0-9]* {yylval.string = strdup(yytext); return ID;}
 "=" {return ASSIGN;}
-[0-9]+ {return NR;}
+[0-9]+ {yylval.string = strdup(yytext); return NR;}
 [ \t] ;
 \n {yylineno++;}
 "$$".*

@@ -1,56 +1,56 @@
-n: intreg;
-n: intreg=5;
-v: intreg[100];
-constanta v: intreg = 54;
-
-functie sum(x: intreg, y: intreg) -> intreg {
-    n: intreg;
-    n=5;
-    n=5;
-};
-
-functie smth() -> vid {
-    n: intreg;
-    n=5;
-    n=5;
-};
-
+$$ types
 clasa Nume {
     public x: intreg;
-    public x: intreg;
-    public x: intreg;
-    public x: intreg;
-	privat y: intreg[100];
-	
-    public hello(x: intreg) -> decimal {
+    public y: intreg;
+    public y: intreg;
+	privat z: intreg;
+
+    public functie hello(x: intreg) -> decimal {
         acesta.x = 5;
-        n: intreg;
-        n=5;    
+        h: intreg;
+        h=5;    
     };
 
-    Nume(n: decimal) {
-        test = x;
+    privat functie world(x: intreg) -> decimal {
+        w: intreg;
+        w=5;    
     };
+}
 
-    ~Nume() {
-        test = 0;
-    };
+n: intreg;
+sssss: intreg = 3;
+v: decimal[100];
+constanta v1: intreg = 5+5*5;
+y: intreg;
+ts: oare = 1&&0;
 
-    privat world(x: intreg) -> decimal {
-        n: intreg;
-        n=5;    
-    };
-};
+functie sum(x: intreg, y: intreg) -> intreg {
+    s1: intreg;
+    s1=5;
+    s1=5;
+}
 
-$$ comentariuuu
-$$alt comm
+functie smth() -> vid {
+    s2: intreg;
+    s2=5;
+    s2=5;
+}
 
+functie world() -> vid {}
 
 inceput
+    variabilaDinMain: intreg;
     v[5]=4;
     n=5;
+    v1=233;
+
+    Nume.z = 5;
+    Nume.world();
 
     daca (x==5) {
+        variabilaDinDaca: intreg;
+        variabilaDinMain: intreg;
+        
         n=5;
     }
     altfel daca(x==10) {
@@ -61,6 +61,7 @@ inceput
     }
 
 pentru element din vector {
+    variabilaDinPentru: intreg;
     x=5;
 }
 
