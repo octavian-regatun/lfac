@@ -4,7 +4,7 @@
 %}
 %option noyywrap
 %%
-"intreg"|"decimal"|"caracter"|"sir"|"bit"|"vid"|"oare" {yylval.string = strdup(yytext); return TYPE;}
+"intreg"|"decimal"|"caracter"|"sir"|"vid"|"oare" {yylval.string = strdup(yytext); return TYPE;}
 "adevarat"|"fals" {yylval.string = strdup(yytext); return BOOL_VALUE;}
 "inceput" {return BGIN;}
 "sfarsit" {return END;}

@@ -54,6 +54,16 @@ void updateScopeVariable(const string& id, const string& index, const string& va
     }
 }
 
+const char* getReturnValue(const std::string& returnType) {
+    if (returnType == "intreg") return "0";
+    else if (returnType == "decimal") return "0.0";
+    else if (returnType == "caracter") return "''";
+    else if (returnType == "sir") return "\"\"";
+    else if (returnType == "vid") return "NULL";
+    else if (returnType == "oare") return "false";
+    return "NULL";
+    yyerror("Invalid return type");
+}
 %}
 %union {
      char* string;
@@ -177,7 +187,11 @@ while : WHILE LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY {
 ;
     
 function_call :
-    ID LEFT_PAREN argument_list RIGHT_PAREN {$$ = strdup(yytext);}
+    ID LEFT_PAREN argument_list RIGHT_PAREN {
+        const char* returnType = functions->getReturnTypeByName($1);
+        const char* returnValue = getReturnValue(returnType);
+        printf("FUNCTION CALL RETURN TYPE: %s, DEFAULT VALUE: %s\n", returnType, returnValue);
+    }
     ;
 
 argument_list :

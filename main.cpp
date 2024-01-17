@@ -114,9 +114,9 @@ public:
                     .c_str());
         return false;
       }
-    } else if (var.type == "bit") {
+    } else if (var.type == "oare") {
       if (value != "true" && value != "false") {
-        yyerror(string("Type mismatch: Expected bit for variable " + var.name +
+        yyerror(string("Type mismatch: Expected oare for variable " + var.name +
                        " at index " + index)
                     .c_str());
         return false;
@@ -470,11 +470,19 @@ public:
     }
     functions.push_back(f);
   }
+
   bool FunctionExists(string name) {
     for (auto f : functions)
       if (f->name == name)
         return 1;
     return 0;
+  }
+
+  const char *getReturnTypeByName(string name) {
+    for (auto f : functions)
+      if (f->name == name)
+        return (char *)f->returnType.c_str();
+    return (char *)"";
   }
 
   void PrintFunctions() {
