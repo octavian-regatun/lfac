@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -503,7 +504,7 @@ public:
 class SymbolTable {
 public:
   static void compile(string path, vector<Function *> &functions,
-                      vector<SingularClass> &classes) {
+                      vector<SingularClass> &classes, ScopeNode *globalScope) {
     FILE *f = fopen(path.c_str(), "w");
     if (f == NULL) {
       printf("Error opening file!\n");
@@ -533,6 +534,19 @@ public:
         }
       }
       fprintf(f, "}\n");
+    }
+
+    fprintf(f, "\nVARIABLES:\n");
+    fprintf(f, "global:\n");
+    for (auto &variable : globalScope->variables) {
+      fprintf(f, "%s %s\n", variable.type.c_str(), variable.name.c_str());
+    }
+
+    fprintf(f, "\nmain:\n");
+    for (auto &child : globalScope->children) {
+      for (auto &variable : child->variables) {
+        fprintf(f, "%s %s\n", variable.type.c_str(), variable.name.c_str());
+      }
     }
   }
 };

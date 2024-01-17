@@ -24,6 +24,8 @@ SymbolTable *symbolTable = new SymbolTable();
 
 Function *currentFunction = NULL;
 
+std::vector<std::string> functionCallParameters;
+
 // Needed for class.member
 char* currentID;
 char* currentStatement;
@@ -78,7 +80,7 @@ const char* getReturnValue(const std::string& returnType) {
 %type <var_info> declaration
 %type <string> expression_or_boolean expression boolean_expression function_call NR LEFT_PAREN statement
 
-%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS
+%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS EVAL TYPEOF
 %token<string> ID BOOL_VALUE TYPE
 
 %left PLUS MINUS
@@ -123,7 +125,7 @@ expression_or_boolean : expression
                      | boolean_expression
                      ;
 
-expression : NR
+expression : NR 
            | ID
            | function_call
            | expression PLUS expression
@@ -186,6 +188,22 @@ while : WHILE LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY {
         } RIGHT_CURLY
 ;
     
+eval_function:
+    EVAL LEFT_PAREN expression_or_boolean RIGHT_PAREN
+    {
+        // Here, you would evaluate the expression or boolean.
+        // The actual implementation will depend on how you're handling expressions in your language.
+    }
+;
+
+typeof_function:
+    TYPEOF LEFT_PAREN expression_or_boolean RIGHT_PAREN
+    {
+        // Here, you determine the type of the argument and return it.
+        // Implement logic to return the type as a string or appropriate format.
+    }
+;
+
 function_call :
     ID LEFT_PAREN argument_list RIGHT_PAREN {
         const char* returnType = functions->getReturnTypeByName($1);
@@ -195,8 +213,12 @@ function_call :
     ;
 
 argument_list :
-    | expression_or_boolean
-    | argument_list ',' expression_or_boolean
+    | expression_or_boolean {
+        functionCallParameters.push_back(string($1));
+    }
+    | argument_list ',' expression_or_boolean {
+        functionCallParameters.push_back(string($3));
+    }
     ;
 
 class_definition :
@@ -359,7 +381,7 @@ int main(int argc, char** argv){
      
     // printf functions.functions vector size
     /* printf("functions size: %d\n", functions->functions.size()); */
-    symbolTable->compile("symbols.txt",functions->functions, classes->classes);
+    symbolTable->compile("symbols.txt",functions->functions, classes->classes, globalScope);
 
     // globalScope->printScope();
      /* globalScope->printTree(); */
