@@ -6,21 +6,14 @@ clasa Nume {
 	
     public functie hello(x: intreg) -> decimal {
         acesta.x = 5;
-        n: intreg;
-        n=5;    
+        h: intreg;
+        h=5;    
     };
 
-    Nume(n: decimal) {
-        test = x;
-    };
-
-    ~Nume() {
-        test = 0;
-    };
 
     privat functie world(x: intreg) -> decimal {
-        n: intreg;
-        n=5;    
+        w: intreg;
+        w=5;    
     };
 }
 
@@ -31,15 +24,15 @@ constanta v1: intreg = 54;
 y: intreg;
 
 functie sum(x: intreg, y: intreg) -> intreg {
-    n: intreg;
-    n=5;
-    n=5;
+    s1: intreg;
+    s1=5;
+    s1=5;
 }
 
 functie smth() -> vid {
-    n: intreg;
-    n=5;
-    n=5;
+    s2: intreg;
+    s2=5;
+    s2=5;
 }
 
 functie world() -> vid {}

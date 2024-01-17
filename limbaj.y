@@ -19,6 +19,8 @@ ScopeNode *currentFunctionScope = NULL;
 FunctionUtility *functions = new FunctionUtility();
 ClassUtility *classes = new ClassUtility();
 
+Function *currentFunction = NULL;
+
 void addVariableToScope(Variable var, ScopeNode *currentScope, ScopeNode *currentClassScope, ScopeNode *currentFunctionScope)
 {
   if(currentClassScope == NULL && currentFunctionScope== NULL){
@@ -60,7 +62,7 @@ void updateScopeVariable(const string& id, const string& index, const string& va
 %type <string> expression_or_boolean expression boolean_expression function_call NR LEFT_PAREN
 
 %token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS
-%token<string> ID TYPE BOOL_VALUE
+%token<string> ID BOOL_VALUE TYPE
 
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
@@ -217,12 +219,20 @@ constructor: ID LEFT_PAREN parameters RIGHT_PAREN LEFT_CURLY function_body RIGHT
 destructor: TILDA ID LEFT_PAREN RIGHT_PAREN LEFT_CURLY function_body RIGHT_CURLY
           ;
 
-function: FUNCTION ID LEFT_PAREN parameters RIGHT_PAREN ARROW TYPE LEFT_CURLY 
+function: FUNCTION ID LEFT_PAREN {
+    if(currentClassScope != NULL)
+        currentFunction = new Function(string($2), currentClassScope->name);
+    else
+        currentFunction = new Function(string($2),"global");
+    functions->AddFunction(currentFunction);
+} parameters RIGHT_PAREN ARROW TYPE {
+    currentFunction->setReturnType($8);
+} LEFT_CURLY 
         {currentFunctionScope=new ScopeNode("functie");
         globalScope->addScopeNode(currentFunctionScope);
-        functions->AddFunction(Function{string($2), string($7)});
         } function_body 
-        {currentFunctionScope=NULL;
+        {
+            currentFunctionScope=NULL;
         currentScope = globalScope;} RIGHT_CURLY
          ; 
 
@@ -231,8 +241,12 @@ functions:
     ;
 
 parameters:
-          | ',' ID COLON TYPE parameters
-          | ID COLON TYPE parameters
+          | ',' ID COLON TYPE {
+            currentFunction->parameters.push_back(Variable{string($4), string($2), 1, "0", 0});
+          } parameters
+          | ID COLON TYPE {
+            currentFunction->parameters.push_back(Variable{string($3), string($1), 1, "0", 0});
+          } parameters
           ;
 
 main : BGIN {
@@ -255,7 +269,30 @@ function_body :
 
 statement:
     | ID ASSIGN expression_or_boolean {
+        if(currentFunctionScope==NULL)
         updateScopeVariable($1, "0", $3, currentScope, currentClassScope, currentFunctionScope);
+        else {
+            if(currentFunctionScope->existsVariable($1)){
+                // search for the variable in currentFunction->queue
+                
+
+                Variable var = currentFunctionScope->findVariable($1); 
+                if(currentFunction->existsVariableInQueue($1)){
+                    var = currentFunction->findLastVariableInQueue($1);
+                }
+                else{
+                    var = currentFunctionScope->findVariable($1);
+                }
+
+                    var.setValue($3);
+                    currentFunction->queue.push_back(var);
+                    currentFunction->printQueue();
+            }
+            else{
+                yyerror("Variable not declared! sunt un prost");
+            }
+        }
+        
     }
     | ID LEFT_SQUARE expression_or_boolean RIGHT_SQUARE ASSIGN expression_or_boolean {
         updateScopeVariable($1, $3, $6, currentScope, currentClassScope, currentFunctionScope);
@@ -278,9 +315,9 @@ int main(int argc, char** argv){
     yyparse();
      
     // globalScope->printScope();
-    globalScope->printTree();
-    functions->PrintFunctions();
-    classes->PrintClasses();
+     /* globalScope->printTree(); */
+    /* functions->PrintFunctions(); */
+    /* classes->PrintClasses(); */
     return 0;
         
 } 
