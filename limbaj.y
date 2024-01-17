@@ -59,7 +59,7 @@ void updateScopeVariable(const string& id, const string& index, const string& va
 }
 
 %type <var_info> declaration
-%type <string> expression_or_boolean expression boolean_expression function_call NR LEFT_PAREN
+%type <string> expression_or_boolean expression boolean_expression function_call NR LEFT_PAREN statement
 
 %token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS
 %token<string> ID BOOL_VALUE TYPE
@@ -180,7 +180,7 @@ argument_list :
 
 class_definition :
     CLASS ID LEFT_CURLY {
-        currentClassScope = new ScopeNode("clasa");
+        currentClassScope = new ScopeNode($2);
         globalScope->addScopeNode(currentClassScope); // append class node
         classes->AddClass(string($2));
     }
@@ -204,9 +204,8 @@ class_member:   property
               | constructor
               | destructor
               ;
-
-property: PUBLIC declaration
-        | PRIVATE declaration
+property: PUBLIC declaration {classes->AddVariableToCurrentClass($2.name, 0);}
+        | PRIVATE declaration {classes->AddVariableToCurrentClass($2.name, 1);}
         ;
 
 method: PUBLIC function
@@ -228,7 +227,7 @@ function: FUNCTION ID LEFT_PAREN {
 } parameters RIGHT_PAREN ARROW TYPE {
     currentFunction->setReturnType($8);
 } LEFT_CURLY 
-        {currentFunctionScope=new ScopeNode("functie");
+        {currentFunctionScope=new ScopeNode($2);
         globalScope->addScopeNode(currentFunctionScope);
         } function_body 
         {
@@ -264,11 +263,15 @@ function_body :
     | function_body for
     | function_body while
     | function_body function_call ';'
+    | function_body class_function_call ';'
+    | function_body class_statement ';'
     | function_body BREAK ';'
     ;
 
-statement:
-    | ID ASSIGN expression_or_boolean {
+class_function_call: ID POINT function_call
+class_statement: ID POINT statement {if(classes->checkIfPrivate($1, $3)) yyerror("You're trying to change a private value");}
+
+statement: ID ASSIGN expression_or_boolean {
         if(currentFunctionScope==NULL)
         updateScopeVariable($1, "0", $3, currentScope, currentClassScope, currentFunctionScope);
         else {
@@ -316,8 +319,8 @@ int main(int argc, char** argv){
      
     // globalScope->printScope();
      /* globalScope->printTree(); */
-    /* functions->PrintFunctions(); */
-    /* classes->PrintClasses(); */
+    functions->PrintFunctions();
+     classes->PrintClasses();
     return 0;
         
 } 

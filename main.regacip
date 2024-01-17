@@ -3,7 +3,8 @@ clasa Nume {
     public x: intreg;
     public y: intreg;
     public y: intreg;
-	
+	privat z: intreg;
+
     public functie hello(x: intreg) -> decimal {
         acesta.x = 5;
         h: intreg;
@@ -42,6 +43,9 @@ inceput
     v[5]=4;
     n=5;
     v1=233;
+
+    Nume.z = 5;
+    Nume.world();
 
     daca (x==5) {
         variabilaDinDaca: intreg;
