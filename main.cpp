@@ -14,8 +14,7 @@ extern int yylineno;
 extern int yylex();
 extern void yyerror(const char *s);
 
-struct Variable
-{
+struct Variable {
   string type;
   string name;
   int size;
@@ -24,16 +23,14 @@ struct Variable
 
   Variable(const string &t, const string &n, const int &s, const string &v,
            const bool &isConst)
-      : type(t), name(n), size(s), isConstant(isConst)
-  {
+      : type(t), name(n), size(s), isConstant(isConst) {
     string va = (t == "sir" && v == "0") ? "" : v;
     for (int i = 0; i < s; i++)
       value.push_back(va);
   }
 
   void setValue(char *val) { value[0] = string(val); }
-  void print()
-  {
+  void print() {
     cout << "Type: " << type << ", Name: " << name << ", Size: " << size
          << ", Is Constant: " << (isConstant ? "true" : "false") << ", Value: ";
     for (int i = 0; i < size; i++)
@@ -42,24 +39,20 @@ struct Variable
   }
 };
 
-class ScopeNode
-{
+class ScopeNode {
 public:
   string name;
   ScopeNode *parent;
   std::vector<Variable> variables;
   vector<ScopeNode *> children;
 
-  ScopeNode(string name)
-  {
+  ScopeNode(string name) {
     this->name = name;
     parent = nullptr;
   }
 
-  void addVariable(Variable &variable)
-  {
-    if (existsVariable(variable.name))
-    {
+  void addVariable(Variable &variable) {
+    if (existsVariable(variable.name)) {
       yyerror(string("Variable: " + variable.name +
                      " already exists in scope " + name +
                      ". You're trying to redeclare the variable")
@@ -72,16 +65,12 @@ public:
 
   void addScopeNode(ScopeNode *node) { children.push_back(node); }
 
-  bool existsVariable(string variableName)
-  {
+  bool existsVariable(string variableName) {
     ScopeNode *currentNode = this;
 
-    while (currentNode != nullptr)
-    {
-      for (Variable var : currentNode->variables)
-      {
-        if (var.name == variableName)
-        {
+    while (currentNode != nullptr) {
+      for (Variable var : currentNode->variables) {
+        if (var.name == variableName) {
           return true;
         }
       }
@@ -92,68 +81,50 @@ public:
   }
 
   bool checkMatchingTypeAndUpdate(Variable &var, const std::string &index,
-                                  const std::string &value, bool constant)
-  {
-    if (constant == true)
-    {
+                                  const std::string &value, bool constant) {
+    if (constant == true) {
       yyerror(string("Can't modify a constant variable").c_str());
       return false;
     }
     int idx = stoi(index);
-    if (idx < 0 || idx >= var.size)
-    {
+    if (idx < 0 || idx >= var.size) {
       yyerror(string("Index out of bounds for variable " + var.name).c_str());
       return false;
     }
 
-    if (var.type == "decimal")
-    {
-      try
-      {
+    if (var.type == "decimal") {
+      try {
         std::stof(value);
         var.value[idx] = value;
         return true;
-      }
-      catch (const std::invalid_argument &)
-      {
+      } catch (const std::invalid_argument &) {
         yyerror(string("Type mismatch: Expected decimal for variable " +
                        var.name + " at index " + index)
                     .c_str());
         return false;
       }
-    }
-    else if (var.type == "intreg")
-    {
-      try
-      {
+    } else if (var.type == "intreg") {
+      try {
         std::stoi(value);
         var.value[idx] = value;
         return true;
-      }
-      catch (const std::invalid_argument &)
-      {
+      } catch (const std::invalid_argument &) {
         yyerror(string("Type mismatch: Expected intreg for variable " +
                        var.name + " at index " + index)
                     .c_str());
         return false;
       }
-    }
-    else if (var.type == "bit")
-    {
-      if (value != "true" && value != "false")
-      {
+    } else if (var.type == "bit") {
+      if (value != "true" && value != "false") {
         yyerror(string("Type mismatch: Expected bit for variable " + var.name +
                        " at index " + index)
                     .c_str());
         return false;
-      }
-      else
-      {
+      } else {
         var.value[idx] = (value == "true") ? "1" : "0";
         return true;
       }
-    }
-    else // sir
+    } else // sir
     {
       var.value[idx] = value;
       return true;
@@ -161,10 +132,8 @@ public:
   }
 
   void updateVariable(const string &id, const string &index,
-                      const string &value)
-  {
-    if (!existsVariable(id))
-    {
+                      const string &value) {
+    if (!existsVariable(id)) {
       yyerror(string("Variable: " + id + " doesn't exists in scope " + name +
                      ". You're trying to update the variable")
                   .c_str());
@@ -173,13 +142,10 @@ public:
 
     ScopeNode *currentNode = this;
 
-    while (currentNode != nullptr)
-    {
+    while (currentNode != nullptr) {
       for (Variable &var : currentNode->variables)
-        if (var.name == id)
-        {
-          if (var.size == 0 && stoi(index) != 0)
-          {
+        if (var.name == id) {
+          if (var.size == 0 && stoi(index) != 0) {
             yyerror(
                 string("Variable: " + id +
                        " isn't a vector. You're trying to update the variable")
@@ -194,10 +160,8 @@ public:
     }
   }
 
-  Variable findVariable(const string &id)
-  {
-    if (!existsVariable(id))
-    {
+  Variable findVariable(const string &id) {
+    if (!existsVariable(id)) {
       yyerror(string("Variable: " + id + " doesn't exists in scope " + name +
                      ". You're trying to find the variable")
                   .c_str());
@@ -206,11 +170,9 @@ public:
 
     ScopeNode *currentNode = this;
 
-    while (currentNode != nullptr)
-    {
+    while (currentNode != nullptr) {
       for (Variable &var : currentNode->variables)
-        if (var.name == id)
-        {
+        if (var.name == id) {
           return var;
         }
       currentNode = currentNode->parent;
@@ -220,43 +182,34 @@ public:
   }
   // Printing
 
-  void printScopeVariables()
-  {
+  void printScopeVariables() {
     ScopeNode *currentNode = this;
 
-    while (currentNode != nullptr)
-    {
-      for (Variable var : currentNode->variables)
-      {
+    while (currentNode != nullptr) {
+      for (Variable var : currentNode->variables) {
         cout << "name: " << var.name << " type: " << var.type << endl;
       }
       currentNode = currentNode->parent;
     }
   }
 
-  void printCurrentScopeVariables()
-  {
-    for (Variable var : variables)
-    {
+  void printCurrentScopeVariables() {
+    for (Variable var : variables) {
       cout << "name: " << var.name << " type: " << var.type << endl;
     }
     printf("\n\n");
   }
 
-  void printScope()
-  {
+  void printScope() {
     cout << "Scope name: " << name << endl;
     printCurrentScopeVariables();
-    for (ScopeNode *node : children)
-    {
+    for (ScopeNode *node : children) {
       node->printScope();
     }
   }
 
-  void printVariables() const
-  {
-    for (const auto &var : variables)
-    {
+  void printVariables() const {
+    for (const auto &var : variables) {
       cout << "Type: " << var.type << ", Name: " << var.name
            << ", Size: " << var.size
            << ", Is Constant: " << (var.isConstant ? "true" : "false")
@@ -267,52 +220,41 @@ public:
     }
   }
 
-  void printTree(int depth = 0) const
-  {
-    for (int i = 0; i < depth; ++i)
-    {
+  void printTree(int depth = 0) const {
+    for (int i = 0; i < depth; ++i) {
       std::cout << "  ";
     }
     std::cout << "\nScope: " << name << "\n";
 
     printVariables();
 
-    for (const auto &child : children)
-    {
+    for (const auto &child : children) {
       child->printTree(depth + 1);
     }
   }
 
-  static void enterScope(string name, ScopeNode *&currentScope)
-  {
+  static void enterScope(string name, ScopeNode *&currentScope) {
     ScopeNode *newScope = new ScopeNode(name);
     newScope->parent = currentScope;
     currentScope->addScopeNode(newScope);
     currentScope = newScope;
   }
 
-  static void exitScope(ScopeNode *&currentScope)
-  {
-    if (currentScope->parent != nullptr)
-    {
+  static void exitScope(ScopeNode *&currentScope) {
+    if (currentScope->parent != nullptr) {
       currentScope = currentScope->parent;
     }
   }
 
-
   // Go back to class node when using smth like: class.variable = x
-  ScopeNode *findScopeByName(const string &targetName)
-  {
-    if (name == targetName)
-    {
+  ScopeNode *findScopeByName(const string &targetName) {
+    if (name == targetName) {
       return this;
     }
 
-    for (ScopeNode *child : children)
-    {
+    for (ScopeNode *child : children) {
       ScopeNode *foundScope = child->findScopeByName(targetName);
-      if (foundScope != nullptr)
-      {
+      if (foundScope != nullptr) {
         return foundScope;
       }
     }
@@ -320,40 +262,31 @@ public:
     return nullptr;
   }
 
-  static void setCurrentClassScopeByName(const string &targetName, ScopeNode *globalScope, ScopeNode *&currentClassScope)
-  {
+  static void setCurrentClassScopeByName(const string &targetName,
+                                         ScopeNode *globalScope,
+                                         ScopeNode *&currentClassScope) {
     ScopeNode *targetScope = globalScope->findScopeByName(targetName);
-    if (targetScope != nullptr)
-    {
+    if (targetScope != nullptr) {
       currentClassScope = targetScope;
-    }
-    else
-    {
+    } else {
       cout << "Scope with name " << targetName << " not found.\n";
     }
   }
 };
 
-enum Visibility
-{
-  PUBLIC_KEYWORD,
-  PRIVATE_KEYWORD
-};
+enum Visibility { PUBLIC_KEYWORD, PRIVATE_KEYWORD };
 
-struct ClassVariables
-{
+struct ClassVariables {
   string name;
   Visibility visible;
 };
 
-struct ClassFunctions
-{
+struct ClassFunctions {
   string name;
   Visibility visible;
 };
 
-struct SingularClass
-{
+struct SingularClass {
   string name;
   vector<ClassVariables> variables;
   vector<ClassFunctions> functions;
@@ -361,77 +294,60 @@ struct SingularClass
   SingularClass(const string &n) : name(n) {}
 };
 
-class ClassUtility
-{
+class ClassUtility {
 public:
   vector<SingularClass> classes;
 
   ClassUtility() {}
 
-  void AddClass(string c)
-  {
-    if (ClassExists(c))
-    {
-      cerr << "Class: " << c << " already exists. You're trying to redeclare it" << endl;
+  void AddClass(string c) {
+    if (ClassExists(c)) {
+      cerr << "Class: " << c << " already exists. You're trying to redeclare it"
+           << endl;
       return;
     }
     classes.push_back(SingularClass(c));
   }
 
-  void AddVariableToCurrentClass(string variableName, bool visibility)
-  {
-    if (!classes.empty())
-    {
-      if (!VariableExistsInCurrentClass(variableName))
-      {
-        classes.back().variables.push_back({variableName, static_cast<Visibility>(visibility)});
+  void AddVariableToCurrentClass(string variableName, bool visibility) {
+    if (!classes.empty()) {
+      if (!VariableExistsInCurrentClass(variableName)) {
+        classes.back().variables.push_back(
+            {variableName, static_cast<Visibility>(visibility)});
+      } else {
+        cerr << "Variable: " << variableName
+             << " already exists in the current class." << endl;
       }
-      else
-      {
-        cerr << "Variable: " << variableName << " already exists in the current class." << endl;
-      }
-    }
-    else
-    {
+    } else {
       cerr << "Error: No class available to add variables." << endl;
     }
   }
 
-  void AddFunctionToCurrentClass(string functionName, bool visibility)
-  {
-    if (!classes.empty())
-    {
-      if (!FunctionExistsInCurrentClass(functionName))
-      {
-        classes.back().functions.push_back({functionName, static_cast<Visibility>(visibility)});
+  void AddFunctionToCurrentClass(string functionName, bool visibility) {
+    if (!classes.empty()) {
+      if (!FunctionExistsInCurrentClass(functionName)) {
+        classes.back().functions.push_back(
+            {functionName, static_cast<Visibility>(visibility)});
+      } else {
+        cerr << "Function: " << functionName
+             << " already exists in the current class." << endl;
       }
-      else
-      {
-        cerr << "Function: " << functionName << " already exists in the current class." << endl;
-      }
-    }
-    else
-    {
+    } else {
       cerr << "Error: No class available to add functions." << endl;
     }
   }
 
-  bool ClassExists(string name)
-  {
+  bool ClassExists(string name) {
     for (auto &c : classes)
       if (c.name == name)
         return true;
     return false;
   }
 
-  bool VariableExistsInCurrentClass(string name)
-  {
-    if (!classes.empty())
-    {
-      for (const auto &variable : classes.back().variables)
-      {
-        if (variable.name == name)
-        {
+  bool VariableExistsInCurrentClass(string name) {
+    if (!classes.empty()) {
+      for (const auto &variable : classes.back().variables) {
+        if (variable.name == name) {
           return true;
         }
       }
@@ -439,14 +355,10 @@ public:
     return false;
   }
 
-  bool FunctionExistsInCurrentClass(string name)
-  {
-    if (!classes.empty())
-    {
-      for (const auto &function : classes.back().functions)
-      {
-        if (function.name == name)
-        {
+  bool FunctionExistsInCurrentClass(string name) {
+    if (!classes.empty()) {
+      for (const auto &function : classes.back().functions) {
+        if (function.name == name) {
           return true;
         }
       }
@@ -454,31 +366,28 @@ public:
     return false;
   }
 
-  void PrintClasses()
-  {
+  void PrintClasses() {
     cout << "\n\nDeclared classes: ";
-    for (const auto &c : classes)
-    {
+    for (const auto &c : classes) {
       cout << c.name << " [";
-      for (size_t i = 0; i < c.variables.size(); i++)
-      {
-        cout << (c.variables[i].visible == PUBLIC_KEYWORD ? "public" : "private") << " variable " << c.variables[i].name;
-        if (i < c.variables.size() - 1)
-        {
+      for (size_t i = 0; i < c.variables.size(); i++) {
+        cout << (c.variables[i].visible == PUBLIC_KEYWORD ? "public"
+                                                          : "private")
+             << " variable " << c.variables[i].name;
+        if (i < c.variables.size() - 1) {
           cout << ", ";
         }
       }
 
-      if (!c.variables.empty() && !c.functions.empty())
-      {
+      if (!c.variables.empty() && !c.functions.empty()) {
         cout << ", ";
       }
 
-      for (size_t i = 0; i < c.functions.size(); i++)
-      {
-        cout << (c.functions[i].visible == PUBLIC_KEYWORD ? "public" : "private") << " function " << c.functions[i].name;
-        if (i < c.functions.size() - 1)
-        {
+      for (size_t i = 0; i < c.functions.size(); i++) {
+        cout << (c.functions[i].visible == PUBLIC_KEYWORD ? "public"
+                                                          : "private")
+             << " function " << c.functions[i].name;
+        if (i < c.functions.size() - 1) {
           cout << ", ";
         }
       }
@@ -488,25 +397,25 @@ public:
     cout << endl;
   }
 
-  bool checkIfPrivate(const string& className, const string& variableName) {
-    for (const auto& c : classes) {
-        if (c.name == className) {
-            for (const auto& variable : c.variables) {
-                if (variable.name == variableName && variable.visible == Visibility::PRIVATE_KEYWORD)
-                    return true;
-            }
-            yyerror("Variable doesn't exist in class. You're trying a redeclaration");
-            return false;
+  bool checkIfPrivate(const string &className, const string &variableName) {
+    for (const auto &c : classes) {
+      if (c.name == className) {
+        for (const auto &variable : c.variables) {
+          if (variable.name == variableName &&
+              variable.visible == Visibility::PRIVATE_KEYWORD)
+            return true;
         }
+        yyerror(
+            "Variable doesn't exist in class. You're trying a redeclaration");
+        return false;
+      }
     }
     yyerror("Class doesn't exists. Called");
     return false;
-}
-
+  }
 };
 
-struct Function
-{
+struct Function {
   string name;
   string returnType;
   vector<Variable> parameters;
@@ -517,11 +426,9 @@ struct Function
 
   void setReturnType(char *type) { returnType = string(type); }
 
-  void printQueue()
-  {
+  void printQueue() {
     cout << "Queue:\n";
-    for (auto &var : queue)
-    {
+    for (auto &var : queue) {
       cout << "Type: " << var.type << ", Name: " << var.name
            << ", Size: " << var.size
            << ", Is Constant: " << (var.isConstant ? "true" : "false")
@@ -532,37 +439,30 @@ struct Function
     }
   }
 
-  bool existsVariableInQueue(const string &id)
-  {
+  bool existsVariableInQueue(const string &id) {
     for (Variable &var : queue)
-      if (var.name == id)
-      {
+      if (var.name == id) {
         return true;
       }
     return false;
   }
 
-  Variable findLastVariableInQueue(const string &id)
-  {
+  Variable findLastVariableInQueue(const string &id) {
     for (int i = queue.size() - 1; i >= 0; i--)
-      if (queue[i].name == id)
-      {
+      if (queue[i].name == id) {
         return queue[i];
       }
     return Variable("", "", 0, "", false);
   }
 };
 
-class FunctionUtility
-{
+class FunctionUtility {
 public:
   vector<Function *> functions;
 
   FunctionUtility() {}
-  void AddFunction(Function *f)
-  {
-    if (FunctionExists(f->name))
-    {
+  void AddFunction(Function *f) {
+    if (FunctionExists(f->name)) {
       yyerror(string("Function: " + f->name +
                      " already exists. You're trying to redeclare it")
                   .c_str());
@@ -570,24 +470,20 @@ public:
     }
     functions.push_back(f);
   }
-  bool FunctionExists(string name)
-  {
+  bool FunctionExists(string name) {
     for (auto f : functions)
       if (f->name == name)
         return 1;
     return 0;
   }
 
-  void PrintFunctions()
-  {
+  void PrintFunctions() {
     cout << "\n\nDeclared functions:\n";
-    for (auto &function : functions)
-    {
+    for (auto &function : functions) {
       cout << "Nume:" << function->name
            << " Return type: " << function->returnType
            << " Node: " << function->node << endl;
-      for (int j = 0; j < function->parameters.size(); j++)
-      {
+      for (int j = 0; j < function->parameters.size(); j++) {
         cout << "Parametru: " << function->parameters[j].name << " "
              << function->parameters[j].type << endl;
       }
@@ -599,7 +495,7 @@ public:
 class SymbolTable {
 public:
   static void compile(string path, vector<Function *> &functions,
-                      vector<string> &classes) {
+                      vector<SingularClass> &classes) {
     FILE *f = fopen(path.c_str(), "w");
     if (f == NULL) {
       printf("Error opening file!\n");
@@ -619,8 +515,16 @@ public:
     }
 
     fprintf(f, "\nCLASSES:\n");
-    for (auto &function : classes) {
-      fprintf(f, "clasa %s\n", function.c_str());
+    for (auto &c : classes) {
+      fprintf(f, "clasa %s { ", c.name.c_str());
+      for (size_t i = 0; i < c.variables.size(); i++) {
+        fprintf(f, "%s %s; ",
+                c.variables[i].visible == PUBLIC_KEYWORD ? "public" : "private",
+                c.variables[i].name.c_str());
+        if (i < c.variables.size() - 1) {
+        }
+      }
+      fprintf(f, "}\n");
     }
   }
 };
