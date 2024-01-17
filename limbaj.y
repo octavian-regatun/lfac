@@ -11,6 +11,7 @@ void yyerror(const char * s);
 //class VariableUtility ids;
 
 ScopeNode *globalScope = new ScopeNode("global");
+//ScopeNode *classFather = new ScopeNode("classes");
 ScopeNode *currentScope = globalScope;
 
 ScopeNode *currentClassScope = NULL;
@@ -20,6 +21,10 @@ FunctionUtility *functions = new FunctionUtility();
 ClassUtility *classes = new ClassUtility();
 
 Function *currentFunction = NULL;
+
+// Needed for class.member
+char* currentID;
+char* currentStatement;
 
 void addVariableToScope(Variable var, ScopeNode *currentScope, ScopeNode *currentClassScope, ScopeNode *currentFunctionScope)
 {
@@ -263,18 +268,41 @@ function_body :
     | function_body for
     | function_body while
     | function_body function_call ';'
-    | function_body class_function_call ';'
     | function_body class_statement ';'
     | function_body BREAK ';'
     ;
 
-class_function_call: ID POINT function_call
-class_statement: ID POINT statement {if(classes->checkIfPrivate($1, $3)) yyerror("You're trying to change a private value");}
+class_statement: ID POINT {
+    currentID = strdup($1);
+} class_job {
+    free(currentID);
+    currentID = NULL;
+};
+
+class_job: function_call |
+    statement
+    ;
+
 
 statement: ID ASSIGN expression_or_boolean {
+        ScopeNode* temp = currentScope;
+
+        // If the statement is made using Class.variable = x;
+        if(currentID!=NULL)
+        {
+            if(classes->checkIfPrivate(currentID, $1)) yyerror("You're trying to change a private value");
+            
+            // Go back to the needed ClassScope
+            ScopeNode::setCurrentClassScopeByName(currentID, globalScope, currentClassScope);
+        }
+
+        // Global/Class
         if(currentFunctionScope==NULL)
         updateScopeVariable($1, "0", $3, currentScope, currentClassScope, currentFunctionScope);
-        else {
+
+        // We are inside a function - save its statements into a queue
+        else 
+        {
             if(currentFunctionScope->existsVariable($1)){
                 // search for the variable in currentFunction->queue
                 
@@ -291,11 +319,9 @@ statement: ID ASSIGN expression_or_boolean {
                     currentFunction->queue.push_back(var);
                     currentFunction->printQueue();
             }
-            else{
-                yyerror("Variable not declared! sunt un prost");
-            }
+            // Else taken care of when checking the entire program
         }
-        
+        currentScope = temp;
     }
     | ID LEFT_SQUARE expression_or_boolean RIGHT_SQUARE ASSIGN expression_or_boolean {
         updateScopeVariable($1, $3, $6, currentScope, currentClassScope, currentFunctionScope);

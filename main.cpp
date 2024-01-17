@@ -298,6 +298,40 @@ public:
       currentScope = currentScope->parent;
     }
   }
+
+
+  // Go back to class node when using smth like: class.variable = x
+  ScopeNode *findScopeByName(const string &targetName)
+  {
+    if (name == targetName)
+    {
+      return this;
+    }
+
+    for (ScopeNode *child : children)
+    {
+      ScopeNode *foundScope = child->findScopeByName(targetName);
+      if (foundScope != nullptr)
+      {
+        return foundScope;
+      }
+    }
+
+    return nullptr;
+  }
+
+  static void setCurrentClassScopeByName(const string &targetName, ScopeNode *globalScope, ScopeNode *&currentClassScope)
+  {
+    ScopeNode *targetScope = globalScope->findScopeByName(targetName);
+    if (targetScope != nullptr)
+    {
+      currentClassScope = targetScope;
+    }
+    else
+    {
+      cout << "Scope with name " << targetName << " not found.\n";
+    }
+  }
 };
 
 enum Visibility
@@ -455,7 +489,6 @@ public:
   }
 
   bool checkIfPrivate(const string& className, const string& variableName) {
-    
     for (const auto& c : classes) {
         if (c.name == className) {
             for (const auto& variable : c.variables) {
