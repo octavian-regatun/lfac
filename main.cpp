@@ -596,6 +596,35 @@ public:
   }
 };
 
+class SymbolTable {
+public:
+  static void compile(string path, vector<Function *> &functions,
+                      vector<string> &classes) {
+    FILE *f = fopen(path.c_str(), "w");
+    if (f == NULL) {
+      printf("Error opening file!\n");
+      exit(1);
+    }
+
+    fprintf(f, "FUNCTIONS:\n");
+    for (auto &function : functions) {
+      fprintf(f, "functie %s ", function->name.c_str());
+      // display function parameters
+      fprintf(f, "(");
+      for (int j = 0; j < function->parameters.size(); j++) {
+        fprintf(f, "%s: %s", function->parameters[j].name.c_str(),
+                function->parameters[j].type.c_str());
+      }
+      fprintf(f, ") -> %s\n", function->returnType.c_str());
+    }
+
+    fprintf(f, "\nCLASSES:\n");
+    for (auto &function : classes) {
+      fprintf(f, "clasa %s\n", function.c_str());
+    }
+  }
+};
+
 /*
 class VariableUtility
 {

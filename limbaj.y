@@ -20,6 +20,8 @@ ScopeNode *currentFunctionScope = NULL;
 FunctionUtility *functions = new FunctionUtility();
 ClassUtility *classes = new ClassUtility();
 
+SymbolTable *symbolTable = new SymbolTable();
+
 Function *currentFunction = NULL;
 
 // Needed for class.member
@@ -305,8 +307,6 @@ statement: ID ASSIGN expression_or_boolean {
         {
             if(currentFunctionScope->existsVariable($1)){
                 // search for the variable in currentFunction->queue
-                
-
                 Variable var = currentFunctionScope->findVariable($1); 
                 if(currentFunction->existsVariableInQueue($1)){
                     var = currentFunction->findLastVariableInQueue($1);
@@ -343,6 +343,10 @@ int main(int argc, char** argv){
     yyin=fopen(argv[1],"r");
     yyparse();
      
+    // printf functions.functions vector size
+    /* printf("functions size: %d\n", functions->functions.size()); */
+    symbolTable->compile("symbols.txt",functions->functions, classes->classes);
+
     // globalScope->printScope();
      /* globalScope->printTree(); */
     functions->PrintFunctions();
