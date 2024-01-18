@@ -20,6 +20,7 @@ ScopeNode *currentFunctionScope = NULL;
 FunctionUtility *functions = new FunctionUtility();
 ClassUtility *classes = new ClassUtility();
 
+
 Function *currentFunction = NULL;
 
 // Needed for class.variable = x;
@@ -32,6 +33,13 @@ AST *ASTglobalRoot = ASTTree;
 string currentVariableType;
 
 // Utility functions
+
+SymbolTable *symbolTable = new SymbolTable();
+
+std::vector<std::string> functionCallParameters;
+
+char* currentStatement;
+
 
 void addVariableToScope(Variable var, ScopeNode *currentScope, ScopeNode *currentClassScope, ScopeNode *currentFunctionScope)
 {
@@ -59,6 +67,18 @@ void updateScopeVariable(const string& id, const string& index, const string& va
     }
 }
 
+
+const char* getReturnValue(const std::string& returnType) {
+    if (returnType == "intreg") return "0";
+    else if (returnType == "decimal") return "0.0";
+    else if (returnType == "caracter") return "''";
+    else if (returnType == "sir") return "\"\"";
+    else if (returnType == "vid") return "NULL";
+    else if (returnType == "oare") return "false";
+    return "NULL";
+    yyerror("Invalid return type");
+}
+
 %}
 %union {
      char* string;
@@ -73,7 +93,7 @@ void updateScopeVariable(const string& id, const string& index, const string& va
 %type <var_info> declaration
 %type <string> expression_or_boolean expression boolean_expression function_call NR LEFT_PAREN statement
 
-%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS
+%token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS EVAL TYPEOF
 %token<string> ID BOOL_VALUE TYPE
 
 
@@ -115,6 +135,7 @@ declaration: ID COLON TYPE { $$ = {$3,$1,strdup("")};
     | CONST ID COLON TYPE {ASTTree = new AST($2,$4); ASTglobalRoot=ASTTree;} ASSIGN expression_or_boolean {$$ = {$4,$2,$7};
     addVariableToScope(Variable{string($4), string($2), 1, ASTglobalRoot->evaluate(), 1}, currentScope, currentClassScope, currentFunctionScope);
     }
+
                ;
 
 expression_or_boolean : expression
@@ -228,13 +249,38 @@ while : WHILE LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY {
         } RIGHT_CURLY
 ;
     
+eval_function:
+    EVAL LEFT_PAREN expression_or_boolean RIGHT_PAREN
+    {
+        // Here, you would evaluate the expression or boolean.
+        // The actual implementation will depend on how you're handling expressions in your language.
+    }
+;
+
+typeof_function:
+    TYPEOF LEFT_PAREN expression_or_boolean RIGHT_PAREN
+    {
+        // Here, you determine the type of the argument and return it.
+        // Implement logic to return the type as a string or appropriate format.
+    }
+;
+
 function_call :
-    ID LEFT_PAREN argument_list RIGHT_PAREN {$$ = strdup(yytext);}
+
+    ID LEFT_PAREN argument_list RIGHT_PAREN {
+        const char* returnType = functions->getReturnTypeByName($1);
+        const char* returnValue = getReturnValue(returnType);
+        printf("FUNCTION CALL RETURN TYPE: %s, DEFAULT VALUE: %s\n", returnType, returnValue);
+    }
     ;
 
 argument_list :
-    | expression_or_boolean
-    | argument_list ',' expression_or_boolean
+    | expression_or_boolean {
+        functionCallParameters.push_back(string($1));
+    }
+    | argument_list ',' expression_or_boolean {
+        functionCallParameters.push_back(string($3));
+    }
     ;
 
 class_definition :
@@ -359,7 +405,6 @@ statement: ID ASSIGN expression_or_boolean {
         {
             if(currentFunctionScope->existsVariable($1)){
                 // search for the variable in currentFunction->queue
-                
 
                 Variable var = currentFunctionScope->findVariable($1); 
                 if(currentFunction->existsVariableInQueue($1)){
@@ -397,10 +442,13 @@ int main(int argc, char** argv){
     yyin=fopen(argv[1],"r");
     yyparse();
      
+    // printf functions.functions vector size
+    /* printf("functions size: %d\n", functions->functions.size()); */
+    symbolTable->compile("symbols.txt",functions->functions, classes->classes, globalScope);
+
     // globalScope->printScope();
-     globalScope->printTree();
-    //functions->PrintFunctions();
-    //classes->PrintClasses();
+     /* globalScope->printTree(); */
+    functions->PrintFunctions();
+     classes->PrintClasses();
     return 0;
-        
 } 

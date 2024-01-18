@@ -30,6 +30,7 @@ functie sum(x: intreg, y: intreg) -> intreg {
     s1=5;
 }
 
+
 functie smth() -> vid {
     s2: intreg;
     s2=5;

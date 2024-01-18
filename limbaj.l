@@ -4,7 +4,7 @@
 %}
 %option noyywrap
 %%
-"intreg"|"decimal"|"caracter"|"sir"|"bit"|"vid"|"oare" {yylval.string = strdup(yytext); return TYPE;}
+"intreg"|"decimal"|"caracter"|"sir"|"vid"|"oare" {yylval.string = strdup(yytext); return TYPE;}
 "adevarat"|"fals" {yylval.string = strdup(yytext); return BOOL_VALUE;}
 "inceput" {return BGIN;}
 "sfarsit" {return END;}
@@ -44,6 +44,8 @@
 "constanta" return CONST;
 "sparge"    return BREAK;
 "acesta"    return THIS;
+"Eval"      return EVAL; 
+"TypeOf"    return TYPEOF; 
 [a-zA-Z][a-zA-Z0-9]* {yylval.string = strdup(yytext); return ID;}
 "=" {return ASSIGN;}
 [0-9]+ {yylval.string = strdup(yytext); return NR;}
