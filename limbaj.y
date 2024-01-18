@@ -20,15 +20,26 @@ ScopeNode *currentFunctionScope = NULL;
 FunctionUtility *functions = new FunctionUtility();
 ClassUtility *classes = new ClassUtility();
 
-SymbolTable *symbolTable = new SymbolTable();
 
 Function *currentFunction = NULL;
 
+// Needed for class.variable = x;
+char* currentID;
+
+// AST tree initialise
+AST *ASTTree = new AST();
+AST *ASTglobalRoot = ASTTree;
+
+string currentVariableType;
+
+// Utility functions
+
+SymbolTable *symbolTable = new SymbolTable();
+
 std::vector<std::string> functionCallParameters;
 
-// Needed for class.member
-char* currentID;
 char* currentStatement;
+
 
 void addVariableToScope(Variable var, ScopeNode *currentScope, ScopeNode *currentClassScope, ScopeNode *currentFunctionScope)
 {
@@ -56,6 +67,7 @@ void updateScopeVariable(const string& id, const string& index, const string& va
     }
 }
 
+
 const char* getReturnValue(const std::string& returnType) {
     if (returnType == "intreg") return "0";
     else if (returnType == "decimal") return "0.0";
@@ -66,6 +78,7 @@ const char* getReturnValue(const std::string& returnType) {
     return "NULL";
     yyerror("Invalid return type");
 }
+
 %}
 %union {
      char* string;
@@ -83,13 +96,13 @@ const char* getReturnValue(const std::string& returnType) {
 %token  BGIN END ASSIGN NR MULTIPLY MINUS DIVIDE MODULO AND OR EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL POINT QUOTE_MARK PLUS LEFT_SQUARE RIGHT_SQUARE LEFT_PAREN RIGHT_PAREN FOR IF ELSE OF CLASS FUNCTION COLON LEFT_CURLY RIGHT_CURLY ARROW TILDA PUBLIC PRIVATE CONST WHILE BREAK THIS EVAL TYPEOF
 %token<string> ID BOOL_VALUE TYPE
 
-%left PLUS MINUS
-%left MULTIPLY DIVIDE
-%left UNARY_MINUS
-%left AND OR
-%left EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL
-%left LEFT_SQUARE RIGHT_SQUARE
+
 %left LEFT_PAREN RIGHT_PAREN
+%left LEFT_SQUARE RIGHT_SQUARE
+%left EQUAL NOT_EQUAL GREATER LESS GREATER_EQUAL LESS_EQUAL
+%left AND OR
+%left MULTIPLY DIVIDE
+%left PLUS MINUS
 
 %start progr
 %%
@@ -110,41 +123,89 @@ declarations :  declaration ';'
 declaration: ID COLON TYPE { $$ = {$3,$1,strdup("")};
     addVariableToScope(Variable{string($3), string($1), 1, "0", 0}, currentScope, currentClassScope, currentFunctionScope);}
     
-    | ID COLON TYPE ASSIGN expression_or_boolean {$$ = {$3,$1,$5};
-    addVariableToScope(Variable{string($3), string($1), 1, string($5), 0}, currentScope, currentClassScope, currentFunctionScope);}
+    | ID COLON TYPE {ASTTree = new AST($1,$3); ASTglobalRoot=ASTTree;}ASSIGN expression_or_boolean {
+    $$ = {$3,$1,$6};
+    addVariableToScope(Variable{string($3), string($1), 1, ASTglobalRoot->evaluate(), 0}, currentScope, currentClassScope, currentFunctionScope);}
     
-    | ID COLON TYPE LEFT_SQUARE NR RIGHT_SQUARE {$$ = {$3,$1,$5};
+    | ID COLON TYPE LEFT_SQUARE NR RIGHT_SQUARE {
+    $$ = {$3,$1,$5};
     addVariableToScope(Variable{string($3), string($1), stoi($5), "0", 0}, currentScope, currentClassScope, currentFunctionScope);
     }
     
-    | CONST ID COLON TYPE ASSIGN expression_or_boolean {$$ = {$4,$2,$6};
-    addVariableToScope(Variable{string($4), string($2), 1, string($6), 1}, currentScope, currentClassScope, currentFunctionScope);}
+    | CONST ID COLON TYPE {ASTTree = new AST($2,$4); ASTglobalRoot=ASTTree;} ASSIGN expression_or_boolean {$$ = {$4,$2,$7};
+    addVariableToScope(Variable{string($4), string($2), 1, ASTglobalRoot->evaluate(), 1}, currentScope, currentClassScope, currentFunctionScope);
+    }
+
                ;
 
 expression_or_boolean : expression
                      | boolean_expression
                      ;
 
-expression : NR 
-           | ID
-           | function_call
-           | expression PLUS expression
-           | expression MINUS expression
-           | expression MULTIPLY expression
+expression : NR { AST *leftChild = new AST($1); ASTTree->addChild(leftChild); }
+           | ID { AST *leftChild = new AST($1); ASTTree->addChild(leftChild); }
+           | function_call 
+           | expression PLUS expression 
+           { 
+            AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("+");
+           ASTTree->addChild(leftChild, "+", rightChild);
+           ASTTree = ASTTree->left;
+           }
+           | expression MINUS expression 
+           { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("-");
+           ASTTree->addChild(leftChild, "-", rightChild);
+           ASTTree = ASTTree->left;}
+           | expression MULTIPLY expression 
+           { 
+
+            AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("*");
+           ASTTree->addChild(leftChild, "*", rightChild);
+           
+           ASTTree = ASTTree->left;
+           
+           }
            | expression DIVIDE expression
-           | LEFT_PAREN expression RIGHT_PAREN
+           { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("/");
+           ASTTree->addChild(leftChild, "/", rightChild);
+           ASTTree = ASTTree->left;}
+           | LEFT_PAREN expression RIGHT_PAREN 
            | ID LEFT_SQUARE NR RIGHT_SQUARE {$$ = strdup(yytext);}
            ;
 
-boolean_expression : BOOL_VALUE
+boolean_expression : BOOL_VALUE { AST *leftChild = new AST($1); ASTTree->addChild(leftChild); }
                  | expression EQUAL expression
+                 { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("==");
+           ASTTree->addChild(leftChild, "==", rightChild);
+           ASTTree = ASTTree->left;}
                  | expression NOT_EQUAL expression
+                 { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("!=");
+           ASTTree->addChild(leftChild, "!=", rightChild);
+           ASTTree = ASTTree->left;}
                  | expression GREATER expression
+                 { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST(">");
+           ASTTree->addChild(leftChild, ">", rightChild);
+           ASTTree = ASTTree->left;}
                  | expression LESS expression
+                 { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("<");
+           ASTTree->addChild(leftChild, "<", rightChild);
+           ASTTree = ASTTree->left;}
                  | expression GREATER_EQUAL expression
+                 { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST(">=");
+           ASTTree->addChild(leftChild, ">=", rightChild);
+           ASTTree = ASTTree->left;}
                  | expression LESS_EQUAL expression
+                 { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("<=");
+           ASTTree->addChild(leftChild, "<=", rightChild);
+           ASTTree = ASTTree->left;}
                  | expression AND expression
-                 | expression OR expression {$$ = strdup(yytext);}
+                 { AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("&&");
+           ASTTree->addChild(leftChild, "&&", rightChild);
+           ASTTree = ASTTree->left;}
+                 | expression OR expression {
+            AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("||");
+           ASTTree->addChild(leftChild, "||", rightChild);
+           ASTTree = ASTTree->left;
+                    $$ = strdup(yytext);}
                  ;
 
 
@@ -205,6 +266,7 @@ typeof_function:
 ;
 
 function_call :
+
     ID LEFT_PAREN argument_list RIGHT_PAREN {
         const char* returnType = functions->getReturnTypeByName($1);
         const char* returnValue = getReturnValue(returnType);
@@ -343,6 +405,7 @@ statement: ID ASSIGN expression_or_boolean {
         {
             if(currentFunctionScope->existsVariable($1)){
                 // search for the variable in currentFunction->queue
+
                 Variable var = currentFunctionScope->findVariable($1); 
                 if(currentFunction->existsVariableInQueue($1)){
                     var = currentFunction->findLastVariableInQueue($1);
