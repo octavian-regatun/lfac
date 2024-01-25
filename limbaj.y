@@ -144,7 +144,7 @@ expression_or_boolean : expression
 
 expression : NR { AST *leftChild = new AST($1); ASTTree->addChild(leftChild); }
            | ID { AST *leftChild = new AST($1); ASTTree->addChild(leftChild); }
-           | function_call 
+           | function_call { AST *leftChild = new AST($1); ASTTree->addChild(leftChild); }
            | expression PLUS expression 
            { 
             AST *leftChild = new AST($1); AST *rightChild = new AST($3); AST *rootNode = new AST("+");
@@ -252,16 +252,12 @@ while : WHILE LEFT_PAREN boolean_expression RIGHT_PAREN LEFT_CURLY {
 eval_function:
     EVAL LEFT_PAREN expression_or_boolean RIGHT_PAREN
     {
-        // Here, you would evaluate the expression or boolean.
-        // The actual implementation will depend on how you're handling expressions in your language.
     }
 ;
 
 typeof_function:
     TYPEOF LEFT_PAREN expression_or_boolean RIGHT_PAREN
     {
-        // Here, you determine the type of the argument and return it.
-        // Implement logic to return the type as a string or appropriate format.
     }
 ;
 
@@ -370,6 +366,8 @@ function_body :
     | function_body function_call ';'
     | function_body class_statement ';'
     | function_body BREAK ';'
+    | function_body eval_function ';'
+    | function_body typeof_function ';'
     ;
 
 class_statement: ID POINT {
@@ -447,8 +445,8 @@ int main(int argc, char** argv){
     symbolTable->compile("symbols.txt",functions->functions, classes->classes, globalScope);
 
     // globalScope->printScope();
-     /* globalScope->printTree(); */
-    functions->PrintFunctions();
-     classes->PrintClasses();
+     // globalScope->printTree();
+    //functions->PrintFunctions();
+    // classes->PrintClasses();
     return 0;
 } 
